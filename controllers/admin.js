@@ -78,85 +78,96 @@ const postEditView = (req, res, next) => {
 };
 
 const updatePost = (req, res, next) => {
-  // let oldpath = req.files.postImage ? req.files.postImage.path : null;
-  let newFileName = (
-    new Date().getTime() +
-    "-" +
-    req.files.postImage.name
-  ).toLowerCase();
-  newFileName = newFileName
-    .replaceAll(" ", "-")
-    .replaceAll("_", "-")
-    .replaceAll(",", "-");
-  let newpath = "./public/post-images/" + newFileName;
-  // fs.rename(oldpath, newpath, function (err) {
-  //   if (err) throw err;
-  // });
+  if (!req.session.user) {
+    res.redirect("/login");
+  } else if (req.session.user.role !== "admin") {
+    res.redirect("/user/dashboard");
+  } else {
+    // let oldpath = req.files.postImage ? req.files.postImage.path : null;
+    let newFileName = (
+      new Date().getTime() +
+      "-" +
+      req.files.postImage.name
+    ).toLowerCase();
+    newFileName = newFileName
+      .replaceAll(" ", "-")
+      .replaceAll("_", "-")
+      .replaceAll(",", "-");
+    let newpath = "./public/post-images/" + newFileName;
+    // fs.rename(oldpath, newpath, function (err) {
+    //   if (err) throw err;
+    // });
 
-  const storage = getStorage();
-  const imageRef = ref(storage, "images/" + newFileName);
-  uploadBytes(imageRef, req.files.postImage.data).then(async (snapshot) => {
-    let newdata = {
-      title: req.body.title,
-      category: req.body.category,
-      content: req.body.content,
-    };
+    const storage = getStorage();
+    const imageRef = ref(storage, "images/" + newFileName);
+    uploadBytes(imageRef, req.files.postImage.data).then(async (snapshot) => {
+      let newdata = {
+        title: req.body.title,
+        category: req.body.category,
+        content: req.body.content,
+      };
 
-    if (req.files.postImage.name != "") {
-      console.log("working");
-      newdata.image = newFileName;
-    }
-
-    Post.findOneAndUpdate(
-      { _id: req.params.id },
-      newdata,
-      { upsert: true },
-      function (err, doc) {
-        if (err) return res.send(500, { error: err });
-
-        res.redirect("/admin/posts");
+      if (req.files.postImage.name != "") {
+        newdata.image = newFileName;
       }
-    );
-  });
+
+      Post.findOneAndUpdate(
+        { _id: req.params.id },
+        newdata,
+        { upsert: true },
+        function (err, doc) {
+          if (err) return res.send(500, { error: err });
+
+          res.redirect("/admin/posts");
+        }
+      );
+    });
+  }
 };
 
 const newPost = (req, res, next) => {
-  let oldpath = req.files.postImage.path;
-  let newFileName = (
-    new Date().getTime() +
-    "-" +
-    req.files.postImage.name
-  ).toLowerCase();
-  newFileName = newFileName
-    .replaceAll(" ", "-")
-    .replaceAll("_", "-")
-    .replaceAll(",", "-");
-  let newpath = "./public/post-images/" + newFileName;
-  // fs.rename(oldpath, newpath, function (err) {
-  //   if (err) throw err;
-  // });
+  if (!req.session.user) {
+    res.redirect("/login");
+  } else if (req.session.user.role !== "admin") {
+    res.redirect("/user/dashboard");
+  } else {
+    let oldpath = req.files.postImage.path;
+    let newFileName = (
+      new Date().getTime() +
+      "-" +
+      req.files.postImage.name
+    ).toLowerCase();
+    newFileName = newFileName
+      .replaceAll(" ", "-")
+      .replaceAll("_", "-")
+      .replaceAll(",", "-");
+    let newpath = "./public/post-images/" + newFileName;
+    // fs.rename(oldpath, newpath, function (err) {
+    //   if (err) throw err;
+    // });
 
-  const storage = getStorage();
-  const imageRef = ref(storage, "images/" + newFileName);
-  uploadBytes(imageRef, req.files.postImage.data).then(async (snapshot) => {
-    // after uploading image to firestore upload image name to database
-    let post = {
-      author: req.session.user._id,
-      title: req.body.title,
-      category: req.body.category,
-      content: req.body.content,
-      image: "",
-    };
+    const storage = getStorage();
+    const imageRef = ref(storage, "images/" + newFileName);
+    uploadBytes(imageRef, req.files.postImage.data).then(async (snapshot) => {
+      // after uploading image to firestore upload image name to database
+      let post = {
+        author: req.session.user._id,
+        title: req.body.title,
+        category: req.body.category,
+        content: req.body.content,
+        image: "",
+      };
 
-    if (req.files.postImage.name != "") {
-      post.image = newFileName;
-    }
+      if (req.files.postImage.name != "") {
+        post.image = newFileName;
+      }
 
-    let newPost = new Post(post);
-    newPost.save().then(function () {
-      res.redirect("/admin/posts");
+      let newPost = new Post(post);
+      newPost.save().then(function () {
+        res.redirect("/admin/posts");
+      });
     });
-  });
+  }
 };
 
 const deletePost = (req, res, next) => {
@@ -172,11 +183,23 @@ const deletePost = (req, res, next) => {
 };
 
 const newPostView = (req, res, next) => {
-  res.render("admin/newPost", { user: req.session.user });
+  if (!req.session.user) {
+    res.redirect("/login");
+  } else if (req.session.user.role !== "admin") {
+    res.redirect("/user/dashboard");
+  } else {
+    res.render("admin/newPost", { user: req.session.user });
+  }
 };
 
 const users = (req, res, next) => {
-  res.render("admin/posts", { user: req.session.user });
+  if (!req.session.user) {
+    res.redirect("/login");
+  } else if (req.session.user.role !== "admin") {
+    res.redirect("/user/dashboard");
+  } else {
+    res.render("admin/posts", { user: req.session.user });
+  }
 };
 
 module.exports = {
